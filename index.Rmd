@@ -2,6 +2,7 @@
 title: "IODS course project"
 output:
   html_document:
+    author: "Janne"
     theme: cosmo
     toc: true
     toc_depth: 2
