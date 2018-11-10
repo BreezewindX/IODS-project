@@ -1,7 +1,142 @@
-# Insert chapter 2 title here
+# Analysis part of the R-exercise 2
 
-*Describe the work you have done this week and summarize your learning.*
+This week I've worked with wrangling, tidying and interpreting questionnaire data and learned how to plot and test linear regression models. Seems like attitude is a main factor affecting the test scores among the variables included in the study. The week has been a good refresher of the previous statistics courses and I have learned more about using Rmarkdown for presenting the results from R.
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using  
+   
+## Introduction to the data *learning2014*
+  
+The data in question is a survey of students' study skills  [SATS]("http://www.etl.tla.ed.ac.uk/publications.html#measurement")  and their attitudes towards statistics [ASSIST]("http://www.evaluationandstatistics.com/") gathered 3.12.2014 - 10.1.2015. 
+Students' approach to study skills were divided into deep, strategic and surface categories. Here are the descriptions from [a presentation by Kimmo Vehkalahti:]("https://www.slideshare.net/kimmovehkalahti/the-relationship-between-learning-approaches-and-students-achievements-in-an-introductory-statistics-course-in-finland"). 
+     
+**Surface approach:** memorizing without understanding, with a serious lack of personal engagement in the learning process.   
+**Deep approach:** intention to maximize understanding, with a true commitment to learning.   
+**Strategic approach:** the ways students organize their studying (apply any strategy that maximizes the chance of achieving the highest possible grades).  
+
+*Points* variable states the points received in a statistics exam. Those who had 0 points (which means that the participant did not attend the exam) were filtered out from the data.   
+   
+## Summary of the data
+   
+
+```{r}
+learning2014 <- read.csv("https://raw.githubusercontent.com/BreezewindX/IODS-project/master/data/learning2014.csv")
+summary(learning2014)
+```
+   
+   
+The data consists of seven variables and has the query results of 166 persons, which of only 56 were men (maybe a bit small sample size). There was approximately twice the amount of females compared to males among the participants. The age of participants was between 17 and 55 years. 
+    
+    
+    
+## Scatterplot matrix between the variables
+   
+   
+```{r, message=FALSE}
+library(GGally)
+ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+```
+  
+  
+From the matrix we can see that the variables that *correlate* positively with points in the exam the most are *attitude* (0.437) and *stra* (0.146). Variable *surf* (-0.144) is negatively correlated. Correlation typically refers to *how close two variables are to having a linear relationship with each other*. 
+
+There is not that much correlation between the study skills, largest is -0.324 between 'deep' and 'surf' (which is notable, but logical as it's unlikely that a student using surface approach uses also deep approach).
+
+The distribution of age seems to be heavily skewed to the left, which means that a big portion of the participants were relatively young. The median age for men was a bit higher than for women.
+   
+The mean of *attitude* score for men is somewhat higher than for women and in general not that many men scored low in attitude. There seems to be not much difference in the use of deep study skills between genders and women seem to rely more on the strategic study skills.
+
+
+
+We'll choose the following linear model for regression
+$$points_i \sim \beta_i+\beta_2attitude_i+\beta_3stra_i+\beta_4surf_i+\epsilon_i$$
+Where $\beta_i$ is the intercept and $\epsilon_i$ is the error term.
+   
+   
+```{r, message=FALSE}
+# create a regression model with multiple explanatory variables
+my_model <- lm(points ~ attitude + stra + surf, data = learning2014)
+
+# print out a summary of the model
+summary(my_model)
+```   
+  
+
+According to Multiple R-squared value, predictors jointly explain only 0.21 (21%) of the observed variance on the dependent variable. F-statistic for the regression tells us that we can reject the null hypothesis that all our explanatory variables are zero, so we don't have to abandon the model at this point.
+   
+The positive coeffiecient of 3.40 for variable *attitude* is statistically significant even at 0.001 significance level.
+   
+P-values for variables *stra* and *surf* are higher than 0.05, which means we cannot, at the 95% confidence level, reject the null hypothesis that their coefficients are zero (ceteris paribus). Thus they are candidates for discarding.
+
+Let's test and alternative hypothesis that both *stra* and *surf* are jointly zero, $H_0:\beta_3=\beta_4=0$.
+
+```{r, message=FALSE}
+library(car)
+ss_results<- linearHypothesis(my_model,  c("stra = 0", "surf = 0"))
+print(ss_results)
+```
+ 
+We get the P-value of 0.182 (>0.05) which means we cannot reject the joint null hypothesis at 95% confidence level.
+ 
+Lets now drop these two 'redundant' variables. The new regression model is
+$$points_i \sim \beta_1 +\beta_2attitude_i+\epsilon_i$$
+   
+   
+```{r, message=FALSE}
+# create a regression model without redundant variables
+new_model <- lm(points ~ attitude, data = learning2014)
+
+# print out a summary of the model
+summary(new_model)
+``` 
+  
+  
+Now the Multiple $R^2$ is almost the same as earlier, even if we dropped the two variables. This is good because adding more variables usually makes $R^2$ grow. We can interpret this so that the model has a better fit. Residuals have now smaller variation. The explanatory variable explains ~19% of the variance in the exam points.
+   
+     
+## Evaluating the assumptions of the model
+
+The assumptions made  
+1. errors are normally distributed   
+2. errors are not correlated   
+3. the errors have constant variance (homoscedasticity)   
+
+$$\epsilon\sim N(0,\sigma^2)   $$
+  
+  
+   
+```{r, message=FALSE}   
+# draw diagnostic plots using the plot() function. Choose the plots 1, 2 and 5
+par(mfrow = c(2,2))
+plot(my_model, which=c(1,2,5))
+```  
+   
+   
+
+### Assessing assumptions visually
+Looking at the Q-Q-plot, the assumption of normality of the residuals seems reasonable, as most of the points are located on the line, even if some outliers can be seen at the edges. 
+
+No obvious pattern emerges in the plotting of residuals vs fitted values (variance seems constant) and none of the observations have big leverage over the whole regression.
+   
+Visual inspection implies that these assumptions are met. It's however a bit hard to say for sure that the variance is constant, so few tests might be in place to confirm this.
+
+### Testing if variance is a constant
+We can test for multiplicative heteroscedasticity using [Breusch-Pagan test]("https://en.wikipedia.org/wiki/Breusch%E2%80%93Pagan_test"), testing against $H_0$ of no heteroscedasticity. 
+
+```{r, message=FALSE}
+library(lmtest)
+library(dplyr)
+new_model %>% 
+  lmtest::bptest() -> bpresults
+print(bpresults)
+```
+
+We get p-value = `r bpresults$p.value`, so cannot reject null hypothesis - we've found no evidence against homoscedasticity.
+
+[The White test]("https://en.wikipedia.org/wiki/White_test") is a generalization of the Breusch-Pagan test and may detect more general forms of heteroscedasticity.
+
+```{r, message=FALSE}
+whiteresults <- bptest(new_model, ~ attitude + I(attitude^2), data = learning2014)
+print(whiteresults)
+```
+
+With this test we get a p-value of `r whiteresults$p.value`, which is the same result than with the earlier test. We have found no evidence against the assumptions of our linear regression.
+
