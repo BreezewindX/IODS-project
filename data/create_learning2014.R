@@ -90,14 +90,13 @@ summary(learning2014)
 ### Draw plots
 
 library(ggplot2)
-learning2014 %>% ggplot(aes(x = attitude, y = points, col=gender)) +
-geom_point() +
-geom_smooth(method = "lm") +
-ggtitle("Student's attitude versus exam points")
+#learning2014 %>% ggplot(aes(x = attitude, y = points, col=gender)) +
+#geom_point() +
+#geom_smooth(method = "lm") +
+#ggtitle("Student's attitude versus exam points")
 
 ### Draw boxplot of the points by gender
 ### learning2014 %>% ggplot(aes(x = factor(gender), y = points, color = gender))  + geom_violin() + geom_boxplot() + xlab("Male = 1") + ggtitle("Male and female points")
-
 
 ### Draw ggpairs
 install.packages("GGally")
@@ -121,12 +120,12 @@ round(ss_results$`Pr(>F)`[2], digits=3)
 par(mfrow = c(2,2))
 plot(my_model, which=c(1,2,5))
 
+##########
+# A new model with less variables
 new_model <- lm(points ~ attitude, data = learning2014)
 
 # print out a summary of the model
 summary(new_model)
-
-### anova(new_model, my_model)
 
 #Test for heteroscedasticity using Breusch-Pagan test, testin H_0 of no
 #heteroscedasticity. We get p-value = 0.8156, cannot reject null hypothesis
@@ -135,9 +134,7 @@ install.packages("lmtest")
 library(lmtest)
 new_model %>% 
   lmtest::bptest() -> bpresults
+
 #Test for heteroscedasticity using the White-test
 bptest(new_model, ~ attitude + I(attitude^2), data = learning2014)
 
-#Test non-linear influence with RESET test
-resettest(formula = points ~ attitude, power = 2, data = learning2014)
-resettest(formula = points ~ attitude, power = 2:3, data = learning2014)
