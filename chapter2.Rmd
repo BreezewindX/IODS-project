@@ -30,7 +30,7 @@ The data consists of seven variables and has the query results of 166 persons, w
 ## Scatterplot matrix between the variables
    
    
-```{r, message=FALSE}
+```{r,dpi = 200, message=FALSE}
 library(GGally)
 ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
 ```
@@ -103,7 +103,7 @@ $$\epsilon\sim N(0,\sigma^2)   $$
   
   
    
-```{r, message=FALSE}   
+```{r,dpi = 200, message=FALSE}   
 # draw diagnostic plots using the plot() function. Choose the plots 1, 2 and 5
 par(mfrow = c(2,2))
 plot(my_model, which=c(1,2,5))
