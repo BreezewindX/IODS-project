@@ -129,7 +129,7 @@ new_model %>%
 print(bpresults)
 ```
 
-We get p-value = `r bpresults$p.value`, so cannot reject null hypothesis - we've found no evidence against homoscedasticity.
+We get p-value = `r round(bpresults$p.value, digits=3)`, so cannot reject null hypothesis - we've found no evidence against homoscedasticity.
 
 [The White test]("https://en.wikipedia.org/wiki/White_test") is a generalization of the Breusch-Pagan test and may detect more general forms of heteroscedasticity.
 
@@ -138,5 +138,5 @@ whiteresults <- bptest(new_model, ~ attitude + I(attitude^2), data = learning201
 print(whiteresults)
 ```
 
-With this test we get a p-value of `r whiteresults$p.value`, which is the same result than with the earlier test. We have found no evidence against the assumptions of our linear regression.
+With this test we get a p-value of `r round(whiteresults$p.value, digits=3)`, which is the same result than with the earlier test. We have found no evidence against the assumptions of our linear regression.
 
