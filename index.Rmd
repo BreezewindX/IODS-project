@@ -1,8 +1,8 @@
 ---
 title: "IODS course project"
+author: "Janne Piiroinen"
 output:
   html_document:
-    author: "Janne"
     theme: cosmo
     toc: true
     toc_depth: 2
