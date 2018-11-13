@@ -135,6 +135,7 @@ library(lmtest)
 new_model %>% 
   lmtest::bptest() -> bpresults
 
+
 #Test for heteroscedasticity using the White-test
 bptest(new_model, ~ attitude + I(attitude^2), data = learning2014)
 
