@@ -101,8 +101,8 @@ glimpse(alc)
 write.csv(alc,"~/Documents/GitHub/IODS-project/data/alc.csv", row.names=FALSE)
 
 
-######################
-###     ANALYSIS   ###
-######################
+####################
+###   ANALYSIS   ###
+####################
 
 

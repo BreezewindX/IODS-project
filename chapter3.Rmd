@@ -1,0 +1,225 @@
+#Analysis part of the R-exercise 3  
+##1 & 2 Preparing the data
+  
+The data are from two identical questionaires related to secondary school student alcohol comsumption in Portugal. The data attributes include student grades, demographic, social and school related features) and it was collected by using school reports and questionnaires. Two datasets are provided regarding the performance in two distinct subjects: Mathematics (mat) and Portuguese language (por). You can find more information [here](https://archive.ics.uci.edu/ml/datasets/Student+Performance). 
+   
+Following adjustments have been made:  
+1. The variables not used for joining the two data have been combined by averaging (including the grade variables)   
+2. *alc_use* is the average of *Dalc* and *Walc*     
+3. *high_use* is TRUE if *alc_use* is higher than 2 and FALSE otherwise  
+   
+Let's takea look at the names of the variables in our dataset:
+   
+```{r, message=FALSE}
+alc <- read.csv("https://raw.githubusercontent.com/BreezewindX/IODS-project/master/data/alc.csv")
+
+colnames(alc)
+```
+   
+##3 Choosing the variables
+I'll choose *high_use* as dependent variable and  *failures*, *absences* and *sex* as explanatory variables.
+   
+My intuition is that   
+* a high use of alcohol is likely related to absences and also failures.  
+* drinking might lead to failing and failing might induce even more drinking  
+* absences might be indicator of failures by itself, even without high alcohol consumption, as there can be multiple reasons for these absences.  
+* alcohol consumption habits might differ between men and women.
+  
+The logistic regression model is
+$$logit(p)=log(p/(1-p))=highuse \sim \beta_1+\beta_2failures+\beta_3absences+\beta_4sex+\epsilon_i$$
+
+##4 Plotting the data
+```{r, message=FALSE}
+library(ggplot2)
+ggplot(alc, aes(x = high_use, fill = sex)) + 
+  geom_bar(position = "fill")
+```
+  
+Majority of the students with high alcohol consumption were men.
+  
+```{r, message=FALSE}
+library(ggpubr)
+library(dplyr)
+dens_score<- ggplot(alc, aes(x = G3)) +
+geom_density()
+x <- seq(1, 18, length.out=100)
+df <- with(alc, data.frame(x = x, y = dnorm(x, mean(G3), sd(G3))))
+dens_score2<-dens_score + geom_line(data = df, aes(x = x, y = y), color = "red")
+
+dens_fail <- ggplot(alc, aes(x = failures, fill = high_use)) +
+geom_bar(position="fill")
+
+dens_abs <- ggplot(alc, aes(x = absences, fill = high_use)) +
+geom_bar(position = "fill")
+
+dens2_abs <- ggplot(alc, aes(x = absences, fill = high_use)) +
+geom_histogram()
+
+#  facet_wrap(~ high_use)
+ggarrange(dens_score2, dens_fail, dens_abs, dens2_abs, 
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
+```
+  
+From A we can see that the scores are somewhat, even if not completely, normally distributed.
+  
+B shows the number of failures as a ratio between students with high and low alcohol consumption. We can see that the share of students with high alcohol use grows, as the amount of failures grow. The findings support the hypothesis that with high alcohol consumption grows the risk of failure.
+    
+Also, in C the share of students with high alcohol consumption grows as the amount of absences grow. This supports the view that students with high alcohol consumption have more absences than the students with low alcohol consumption.
+
+D is graph C in absolute values, where we can see that the mumber of absencees is diminishing. There are some outliers in the data.
+  
+```{r, message=FALSE}
+library(ggplot2)
+
+# initialize a plot of high_use and G3
+g1 <- ggplot(alc, aes(x = high_use, y = G3, col = sex))
+
+# define the plot as a boxplot and draw it
+g1 + geom_boxplot() + ylab("grade")
+```
+  
+Distribution of grades seem more symmetric among students with low alcohol consumption, and grades of both sexes have more spread than in the case of high consumption. Grades of men are clearly more affected by heavy consumption, than women's, as the mean of grades for women is almost the same in both cases. For men, there are outliers who received bad grades and how much they drink does not seem to affect it.
+   
+
+```{r, message=FALSE}
+# initialise a plot of high_use and absences
+g2 <- ggplot(alc, aes(x = high_use, y = absences, col = sex))
+
+# define the plot as a boxplot and draw it
+g2 + geom_boxplot() + ylab("abcences") + ggtitle("Student absences by alcohol consumption and sex")
+```
+  
+Absences seem to increase when alcohol consumption is high, which makes sense as high consumption has tendency to make you feel like crap the next morning. Again, we can see that absences of men are more affected by drinking. Women have more absences than men when consuming a little and there are pretty high amount of absences for the outliers in the women's data.
+   
+```{r, message=FALSE}
+library(GGally)
+vars <- c("high_use","failures","absences","sex")
+ggpairs(alc, columns = vars, mapping = aes(col = sex, alpha = 0.3), lower = list(combo = wrap("facethist")))
+```
+  
+Last but not least, we can see that there's not much correlation between *failures* and *absence*. There was about the same amount of both of the sexes in the data, even if there was slightly more women.
+  
+  
+##5 Interpreting the logistic regression
+```{r, message=FALSE}
+# find the model with glm()
+m <- glm(high_use ~ failures + absences + sex, data = alc, family = "binomial")
+# print out a summary of the model
+summary(m)
+  
+#Round the coefficents for cleaner look
+clean <- round(coef(m), digits=3)
+print(clean)
+
+mean(m$residuals)
+```
+
+Here we can see the summary of the model. All explanatory variables are statistically significant at 95% confidence level. *Absences* and *sex* are significant even with 99.9%.
+
+For every one unit change in *failures*, the log odds of *high_use* (versus low-use) increases by `r clean[2]`.  
+For every one unit change in *absences*, the log odds of *high_use* (versus low-use) increases by `r clean[3]`.  
+If the person in question is a male, the log odds of *high_use* increases by `r clean[4]`.  
+
+Therefore this fitted model says that, holding *failures* and *absences* at a fixed value, the odds of a high alcohol consumption for a male (*sex* = 1) over the odds of high alcohol consumption for female (*sex* = 0) is exp(`r m$coefficients[4]`) ≈ `r round(exp(m$coefficients[4]),digits=3)`.  In terms of percent change, we can say that the odds for men are `r round(((exp(m$coefficients[4]))-1)*100, digits=0)`% higher than the odds for women. The coefficient for *failures* says that, holding *absences* and *sex* at a fixed value, we will see `r round(((exp(m$coefficients[2]))-1)*100, digits=0)`% increase in the odds of having high alcohol consumption for a one-unit increase in failures since exp(`r m$coefficients[2]`) ≈`r round(exp(m$coefficients[2]),digits=3)`. Variable *absences* has the same interpretation.
+
+Residuals of the regression are close to mean zero, which is what we would want.
+
+```{r, message=FALSE}
+# compute odds ratios (OR)
+OR <- coef(m) %>% exp
+
+# compute confidence intervals (CI)
+CI <- confint(m) %>% exp
+
+# print out the odds ratios with their confidence intervals
+cbind(OR, CI)
+```
+   
+Here we can see the odds ratios for the variables and their corresponding confidence intervals. Note that for logistic models, confidence intervals are based on the profiled log-likelihood function.
+
+Following is an excerpt from [here](http://www.sthda.com/english/articles/36-classification-methods-essentials/151-logistic-regression-essentials-in-r/#interpretation).  
+"An odds ratio measures the association between a predictor variable (x) and the outcome variable (y). It represents the ratio of the odds that an event will occur (event = 1) given the presence of the predictor x (x = 1), compared to the odds of the event occurring in the absence of that predictor (x = 0).
+  
+For a given predictor (say x1), the associated beta coefficient (b1) in the logistic regression function corresponds to the log of the odds ratio for that predictor.
+  
+If the odds ratio is 2, then the odds that the event occurs (event = 1) are two times higher when the predictor x is present (x = 1) versus x is absent (x = 0)."
+  
+From the odds ratios we have here we can say that it's more likely that student has high alcohol consumption if there are failures present and if the student is a male the odds are over 2.5 times as high as if they were female.  
+Looks like the odds ratio is a square of the regression coefficient.
+
+The confidence interval can be interpreted so that the true value of the coefficient belongs to this interval at 95% of the times. Confint function is showing two-tailed, from the 2.5% point to the 97.5% point of the relevant distribution, which form the upper and lower limits of the intervals.  
+    
+Lets recap my intuition in the beginning of this analysis part:
+* a high use of alcohol is likely related to absences and also failures.
+  
+Seems like failures and high use of alcohol are related. We can see this from the statistically significant coefficients of the regression.
+   
+* absences might be indicator of failures by itself, even without high alcohol consumption, as there can be multiple reasons for these absences.
+   
+Absences are also statistically significant, but presence of them does not raise the odds that much. There is probably many more reasons for being absent than alcohol intake.
+   
+* alcohol consumption habits might differ between men and women.
+  
+The data-analysis would seem to support the evidence, that it's more likely that men have high alcohol consumption in the study group, and that they also get lower grades and are more absent with high alcohol consumption. 
+
+##6 Exploring the predictive power of the chosen model
+
+Target variable versus the predictions (2x2) tabulation
+```{r, message=FALSE}
+# predict() the probability of high_use
+probabilities <- predict(m, type = "response")
+
+# add the predicted probabilities to 'alc'
+alc <- mutate(alc, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alc <- mutate(alc, prediction = probability > 0.5)
+
+# tabulate the target variable versus the predictions
+table(high_use = alc$high_use, prediction = alc$prediction)
+```
+     
+We can see that the model predicted quite accurately when *high_use* was false, as we got only 9 predictions wrong out of 268.
+  
+However, it did not do so well when predicting when it's true, as prediction was false 84 times out of 114. Graphical representation follows.
+
+```{r, message=FALSE}
+# initialize a plot of 'high_use' versus 'probability' in 'alc'
+g <- ggplot(alc, aes(x = probability, y = high_use, col=prediction))
+
+# define the geom as points and draw the plot
+g + geom_point()
+
+# tabulate the target variable versus the predictions
+table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table() %>% addmargins()
+```
+   
+   
+   
+Computing the total proportion of inaccurately classified individuals (= the training error): 
+```{r, message=FALSE}
+# define a loss function (mean prediction error)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+# call loss_func to compute the average number of wrong predictions in the (training) data
+loss <- loss_func(class = alc$high_use, prob = alc$probability)
+print(loss)
+```
+
+On average, our model predicts the end result wrong approx. `r round(loss*100,digits=0)`% of the predictions in the training data.
+ 
+##7 10-fold cross-validation on the model
+
+```{r, message=FALSE}
+# K-fold cross-validation
+library(boot)
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+```
+   
+Average number of wrong predictions in the cross validation is approximately `r round(cv$delta[1], digits=2)`. My chosen model is exactly the same as in the datacamp exercise, so of course the prediction error is the same.  When comparing different models, we would prefer a model with smaller penalty (i.e. error). If one could re-select the explanatory variables so that the error would be smaller, that model could be preferred in prediction over this one. If more variables are added to the regression, the average error grows.
