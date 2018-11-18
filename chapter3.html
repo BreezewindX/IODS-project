@@ -124,8 +124,10 @@ $(document).ready(function () {
 </div>
 
 
-<div id="section" class="section level2">
-<h2>1 &amp; 2</h2>
+<div id="analysis-part-of-the-r-exercise-3" class="section level1">
+<h1>Analysis part of the R-exercise 3</h1>
+<div id="preparing-the-data" class="section level2">
+<h2>1 &amp; 2 Preparing the data</h2>
 <p>The data are from two identical questionaires related to secondary school student alcohol comsumption in Portugal. The data attributes include student grades, demographic, social and school related features) and it was collected by using school reports and questionnaires. Two datasets are provided regarding the performance in two distinct subjects: Mathematics (mat) and Portuguese language (por). You can find more information <a href="https://archive.ics.uci.edu/ml/datasets/Student+Performance">here</a>.</p>
 <p>Following adjustments have been made:<br />
 1. The variables not used for joining the two data have been combined by averaging (including the grade variables)<br />
@@ -143,8 +145,8 @@ colnames(alc)</code></pre>
 ## [26] &quot;goout&quot;      &quot;Dalc&quot;       &quot;Walc&quot;       &quot;health&quot;     &quot;absences&quot;  
 ## [31] &quot;G1&quot;         &quot;G2&quot;         &quot;G3&quot;         &quot;alc_use&quot;    &quot;high_use&quot;</code></pre>
 </div>
-<div id="section-1" class="section level2">
-<h2>3</h2>
+<div id="choosing-the-variables" class="section level2">
+<h2>3 Choosing the variables</h2>
 <p>I’ll choose <em>high_use</em> as dependent variable and <em>failures</em>, <em>absences</em> and <em>sex</em> as explanatory variables.</p>
 <p>My intuition is that<br />
 * a high use of alcohol is likely related to absences and also failures.<br />
@@ -266,10 +268,10 @@ cbind(OR, CI)</code></pre>
 ## absences    1.0977032 1.05169654 1.150848
 ## sexM        2.5629682 1.60381392 4.149405</code></pre>
 <p>Here we can see the odds ratios for the variables and their corresponding confidence intervals. Note that for logistic models, confidence intervals are based on the profiled log-likelihood function.</p>
-<p>Following is an excerpt from <a href="http://www.sthda.com/english/articles/36-classification-methods-essentials/151-logistic-regression-essentials-in-r/#interpretation">here</a>.<br />
-“An odds ratio measures the association between a predictor variable (x) and the outcome variable (y). It represents the ratio of the odds that an event will occur (event = 1) given the presence of the predictor x (x = 1), compared to the odds of the event occurring in the absence of that predictor (x = 0).</p>
-<p>For a given predictor (say x1), the associated beta coefficient (b1) in the logistic regression function corresponds to the log of the odds ratio for that predictor.</p>
-<p>If the odds ratio is 2, then the odds that the event occurs (event = 1) are two times higher when the predictor x is present (x = 1) versus x is absent (x = 0).&quot;</p>
+<p>Following is an excerpt from <a href="http://www.sthda.com/english/articles/36-classification-methods-essentials/151-logistic-regression-essentials-in-r/#interpretation">here</a>.</p>
+<blockquote>
+<p>An odds ratio measures the association between a predictor variable (x) and the outcome variable (y). It represents the ratio of the odds that an event will occur (event = 1) given the presence of the predictor x (x = 1), compared to the odds of the event occurring in the absence of that predictor (x = 0). For a given predictor (say x1), the associated beta coefficient (b1) in the logistic regression function corresponds to the log of the odds ratio for that predictor. If the odds ratio is 2, then the odds that the event occurs (event = 1) are two times higher when the predictor x is present (x = 1) versus x is absent (x = 0).</p>
+</blockquote>
 <p>From the odds ratios we have here we can say that it’s more likely that student has high alcohol consumption if there are failures present and if the student is a male the odds are over 2.5 times as high as if they were female.<br />
 Looks like the odds ratio is a square of the regression coefficient.</p>
 <p>The confidence interval can be interpreted so that the true value of the coefficient belongs to this interval at 95% of the times. Confint function is showing two-tailed, from the 2.5% point to the 97.5% point of the relevant distribution, which form the upper and lower limits of the intervals.</p>
@@ -330,15 +332,16 @@ print(loss)</code></pre>
 <pre><code>## [1] 0.2434555</code></pre>
 <p>On average, our model predicts the end result wrong approx. 24% of the predictions in the training data.</p>
 </div>
-<div id="fold-cross-validation-on-the-model." class="section level2">
-<h2>7 10-fold cross-validation on the model.</h2>
+<div id="fold-cross-validation-on-the-model" class="section level2">
+<h2>7 10-fold cross-validation on the model</h2>
 <pre class="r"><code># K-fold cross-validation
 library(boot)
 cv &lt;- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
 # average number of wrong predictions in the cross validation
 cv$delta[1]</code></pre>
 <pre><code>## [1] 0.2565445</code></pre>
-<p>Average number of wrong predictions in the cross validation is 0.26. My chosen model is exactly the same as in the datacamp exercise, so of course the prediction error is the same. When comparing different models, we would prefer a model with smaller penalty (i.e. error). If one could re-select the explanatory variables so that the error would be smaller, that model could be preferred in prediction.</p>
+<p>Average number of wrong predictions in the cross validation is approximately 0.26. My chosen model is exactly the same as in the datacamp exercise, so of course the prediction error is the same. When comparing different models, we would prefer a model with smaller penalty (i.e. error). If one could re-select the explanatory variables so that the error would be smaller, that model could be preferred in prediction over this one. If more variables are added to the regression, the average error grows.</p>
+</div>
 </div>
 
 

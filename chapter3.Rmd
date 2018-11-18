@@ -139,11 +139,8 @@ cbind(OR, CI)
 Here we can see the odds ratios for the variables and their corresponding confidence intervals. Note that for logistic models, confidence intervals are based on the profiled log-likelihood function.
 
 Following is an excerpt from [here](http://www.sthda.com/english/articles/36-classification-methods-essentials/151-logistic-regression-essentials-in-r/#interpretation).  
-"An odds ratio measures the association between a predictor variable (x) and the outcome variable (y). It represents the ratio of the odds that an event will occur (event = 1) given the presence of the predictor x (x = 1), compared to the odds of the event occurring in the absence of that predictor (x = 0).
   
-For a given predictor (say x1), the associated beta coefficient (b1) in the logistic regression function corresponds to the log of the odds ratio for that predictor.
-  
-If the odds ratio is 2, then the odds that the event occurs (event = 1) are two times higher when the predictor x is present (x = 1) versus x is absent (x = 0)."
+>An odds ratio measures the association between a predictor variable (x) and the outcome variable (y). It represents the ratio of the odds that an event will occur (event = 1) given the presence of the predictor x (x = 1), compared to the odds of the event occurring in the absence of that predictor (x = 0).  For a given predictor (say x1), the associated beta coefficient (b1) in the logistic regression function corresponds to the log of the odds ratio for that predictor. If the odds ratio is 2, then the odds that the event occurs (event = 1) are two times higher when the predictor x is present (x = 1) versus x is absent (x = 0).
   
 From the odds ratios we have here we can say that it's more likely that student has high alcohol consumption if there are failures present and if the student is a male the odds are over 2.5 times as high as if they were female.  
 Looks like the odds ratio is a square of the regression coefficient.

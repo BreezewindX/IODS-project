@@ -3,6 +3,7 @@ title: "IODS course project"
 author: "Janne Piiroinen"
 output:
   html_document:
+    css: custom.css
     theme: cosmo
     toc: true
     toc_depth: 2

@@ -70,6 +70,7 @@ h6 {
 }
 </style>
 
+<link href="data:text/css;charset=utf-8,blockquote%20%7B%0Apadding%3A%2010px%2020px%3B%0Amargin%3A%200%200%2020px%3B%0Afont%2Dsize%3A%2014px%3B%0Aborder%2Dleft%3A%205px%20solid%20%23eee%3B%0A%7D" rel="stylesheet" type="text/css" />
 
 </head>
 
@@ -474,10 +475,10 @@ cbind(OR, CI)</code></pre>
 ## absences    1.0977032 1.05169654 1.150848
 ## sexM        2.5629682 1.60381392 4.149405</code></pre>
 <p>Here we can see the odds ratios for the variables and their corresponding confidence intervals. Note that for logistic models, confidence intervals are based on the profiled log-likelihood function.</p>
-<p>Following is an excerpt from <a href="http://www.sthda.com/english/articles/36-classification-methods-essentials/151-logistic-regression-essentials-in-r/#interpretation">here</a>.<br />
-“An odds ratio measures the association between a predictor variable (x) and the outcome variable (y). It represents the ratio of the odds that an event will occur (event = 1) given the presence of the predictor x (x = 1), compared to the odds of the event occurring in the absence of that predictor (x = 0).</p>
-<p>For a given predictor (say x1), the associated beta coefficient (b1) in the logistic regression function corresponds to the log of the odds ratio for that predictor.</p>
-<p>If the odds ratio is 2, then the odds that the event occurs (event = 1) are two times higher when the predictor x is present (x = 1) versus x is absent (x = 0).&quot;</p>
+<p>Following is an excerpt from <a href="http://www.sthda.com/english/articles/36-classification-methods-essentials/151-logistic-regression-essentials-in-r/#interpretation">here</a>.</p>
+<blockquote>
+<p>An odds ratio measures the association between a predictor variable (x) and the outcome variable (y). It represents the ratio of the odds that an event will occur (event = 1) given the presence of the predictor x (x = 1), compared to the odds of the event occurring in the absence of that predictor (x = 0). For a given predictor (say x1), the associated beta coefficient (b1) in the logistic regression function corresponds to the log of the odds ratio for that predictor. If the odds ratio is 2, then the odds that the event occurs (event = 1) are two times higher when the predictor x is present (x = 1) versus x is absent (x = 0).</p>
+</blockquote>
 <p>From the odds ratios we have here we can say that it’s more likely that student has high alcohol consumption if there are failures present and if the student is a male the odds are over 2.5 times as high as if they were female.<br />
 Looks like the odds ratio is a square of the regression coefficient.</p>
 <p>The confidence interval can be interpreted so that the true value of the coefficient belongs to this interval at 95% of the times. Confint function is showing two-tailed, from the 2.5% point to the 97.5% point of the relevant distribution, which form the upper and lower limits of the intervals.</p>
@@ -545,8 +546,8 @@ library(boot)
 cv &lt;- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
 # average number of wrong predictions in the cross validation
 cv$delta[1]</code></pre>
-<pre><code>## [1] 0.2539267</code></pre>
-<p>Average number of wrong predictions in the cross validation is approximately 0.25. My chosen model is exactly the same as in the datacamp exercise, so of course the prediction error is the same. When comparing different models, we would prefer a model with smaller penalty (i.e. error). If one could re-select the explanatory variables so that the error would be smaller, that model could be preferred in prediction over this one. If more variables are added to the regression, the average error grows.</p>
+<pre><code>## [1] 0.2617801</code></pre>
+<p>Average number of wrong predictions in the cross validation is approximately 0.26. My chosen model is exactly the same as in the datacamp exercise, so of course the prediction error is the same. When comparing different models, we would prefer a model with smaller penalty (i.e. error). If one could re-select the explanatory variables so that the error would be smaller, that model could be preferred in prediction over this one. If more variables are added to the regression, the average error grows.</p>
 <hr />
 </div>
 </div>
