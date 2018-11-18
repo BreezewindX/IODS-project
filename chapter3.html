@@ -275,7 +275,10 @@ cbind(OR, CI)</code></pre>
 <p>From the odds ratios we have here we can say that it’s more likely that student has high alcohol consumption if there are failures present and if the student is a male the odds are over 2.5 times as high as if they were female.<br />
 Looks like the odds ratio is a square of the regression coefficient.</p>
 <p>The confidence interval can be interpreted so that the true value of the coefficient belongs to this interval at 95% of the times. Confint function is showing two-tailed, from the 2.5% point to the 97.5% point of the relevant distribution, which form the upper and lower limits of the intervals.</p>
-<p>Lets recap my intuition in the beginning of this analysis part: * a high use of alcohol is likely related to absences and also failures.</p>
+<p>Lets recap my intuition in the beginning of this analysis part:</p>
+<ul>
+<li>a high use of alcohol is likely related to absences and also failures.</li>
+</ul>
 <p>Seems like failures and high use of alcohol are related. We can see this from the statistically significant coefficients of the regression.</p>
 <ul>
 <li>absences might be indicator of failures by itself, even without high alcohol consumption, as there can be multiple reasons for these absences.</li>
@@ -339,7 +342,7 @@ library(boot)
 cv &lt;- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
 # average number of wrong predictions in the cross validation
 cv$delta[1]</code></pre>
-<pre><code>## [1] 0.2565445</code></pre>
+<pre><code>## [1] 0.2591623</code></pre>
 <p>Average number of wrong predictions in the cross validation is approximately 0.26. My chosen model is exactly the same as in the datacamp exercise, so of course the prediction error is the same. When comparing different models, we would prefer a model with smaller penalty (i.e. error). If one could re-select the explanatory variables so that the error would be smaller, that model could be preferred in prediction over this one. If more variables are added to the regression, the average error grows.</p>
 </div>
 </div>

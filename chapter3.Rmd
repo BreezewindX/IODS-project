@@ -148,6 +148,7 @@ Looks like the odds ratio is a square of the regression coefficient.
 The confidence interval can be interpreted so that the true value of the coefficient belongs to this interval at 95% of the times. Confint function is showing two-tailed, from the 2.5% point to the 97.5% point of the relevant distribution, which form the upper and lower limits of the intervals.  
     
 Lets recap my intuition in the beginning of this analysis part:
+   
 * a high use of alcohol is likely related to absences and also failures.
   
 Seems like failures and high use of alcohol are related. We can see this from the statistically significant coefficients of the regression.
@@ -157,7 +158,7 @@ Seems like failures and high use of alcohol are related. We can see this from th
 Absences are also statistically significant, but presence of them does not raise the odds that much. There is probably many more reasons for being absent than alcohol intake.
    
 * alcohol consumption habits might differ between men and women.
-  
+   
 The data-analysis would seem to support the evidence, that it's more likely that men have high alcohol consumption in the study group, and that they also get lower grades and are more absent with high alcohol consumption. 
 
 ##6 Exploring the predictive power of the chosen model
