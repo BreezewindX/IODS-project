@@ -105,4 +105,12 @@ write.csv(alc,"~/Documents/GitHub/IODS-project/data/alc.csv", row.names=FALSE)
 ###   ANALYSIS   ###
 ####################
 
+#Read the data
+alc <- read.csv("https://raw.githubusercontent.com/BreezewindX/IODS-project/master/data/alc.csv")
 
+# find the model with glm()
+m <- glm(high_use ~ failures + absences + sex, data = alc, family = "binomial")
+# print out a summary of the model
+summary(m)
+# print out the coefficients of the model
+round(coef(m), digits=3)
