@@ -347,3 +347,61 @@ lda.arrows(lda.fit, myscale = 4)
 ```
    
 `Rad` and `tax` (and maybe `indus`) are the most influencial linear separators for cluster *#2*. `Age` and `chas` for cluster *#1*. `Dis` and `rm` for cluster *#3*. `Black` affects towards clusters *#1* and *#3*. Selecting the right amount of clusters seem to be important, so it's useful to know some methods to choose optimal amount of them (for example using the elbow method we used earlier).
+   
+   
+##Super Bonus
+    
+```{r, message=FALSE}
+data("Boston")
+boston_scaled <- scale(Boston)
+boston_scaled <- as.data.frame(boston_scaled)
+set.seed(123)  #Setting seed
+bins <- quantile(boston_scaled$crim)
+
+# create a categorical variable 'crime'
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label=c("low","med_low","med_high","high"))
+
+# look at the table of the new factor crime
+#table(crime)
+
+# remove original crim from the dataset
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+
+# add the new categorical value to scaled data
+boston_scaled <- data.frame(boston_scaled, crime)
+# number of rows in the Boston dataset 
+n <- nrow(boston_scaled)
+
+# choose randomly 80% of the rows
+ind <- sample(n,  size = n * 0.8)
+
+# create train set
+train <- boston_scaled[ind,]
+
+# create test set 
+test <- boston_scaled[-ind,]
+lda.fit <- lda(crime ~ ., data = train)
+model_predictors <- dplyr::select(train, -crime)
+# check the dimensions
+dim(model_predictors)
+dim(lda.fit$scaling)
+# matrix multiplication
+matrix_product <- as.matrix(model_predictors) %*% lda.fit$scaling
+matrix_product <- as.data.frame(matrix_product)
+
+library(plotly)
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers', color = train$crime)
+
+set.seed(123)
+data("Boston")
+boston_scaled <- scale(Boston)
+boston_scaled <- as.data.frame(boston_scaled)
+myset <- boston_scaled[ind,]
+
+km <-kmeans(myset, centers = 2)
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers', color = km$cluster)
+```
+    
+We can see that one cluster includes approximately the dots with *high* and *med-high* crime, and the other cluster the lower crime dots. There are no other differences between the two graphs, because I set the seed and the data for both is the same. I'm using the optimal two centers here for the clusters.
+   
+   
