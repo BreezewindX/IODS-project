@@ -1,7 +1,8 @@
 # Janne Piiroinen
-# 25.11.2018
+# 25.11.2018, 26.11.2018
 # This is the R-code for RStudio Exercise 4 data wrangling part, 
 # preparing the data for Exercise 5.
+# We have continued working with this file on Exercise 5.
 
 #########################
 ##  Reading the data   ##
@@ -83,4 +84,55 @@ write.csv(human,"~/Documents/GitHub/IODS-project/data/human.csv", row.names=FALS
 library(readr)
 View(read_csv("~/Documents/GitHub/IODS-project/data/human.csv"))
 
-#Thank you for visiting! ;)
+#End of exercise 4
+
+###########################
+## Data wrangling part   ##
+##   of exercise 5       ##
+###########################
+
+#Mutate the data: transform the Gross National Income (GNI) 
+#variable to numeric (Using string manipulation. 
+
+read_csv("~/Documents/GitHub/IODS-project/data/human.csv")
+human <- mutate(human, gni = as.numeric(gsub(",","",human$gni)))
+
+#Exclude unneeded variables: keep only the columns matching 
+#the following variable names (described in the meta file above):  
+#"Country", "Edu2.FM", "Labo.FM", "Edu.Exp", "Life.Exp", 
+#"GNI", "Mat.Mor", "Ado.Birth", "Parli.F"                                                                        
+     
+keep <- c("country", "edu2F", "labF", "lifeExp", "expSchool", "gni", "mamo.ratio", "adobirthrate", "parlrep")
+
+# select the 'keep' columns
+human <- select(human, one_of(keep))
+
+# filter out all rows with NA values
+human_ <- filter(human, complete.cases(human)==TRUE)
+                                                                           
+# look at the last 10 observations of human
+tail(human_, 10)
+
+# define the last indice we want to keep
+last <- nrow(human_) - 7
+
+# choose everything until the last 7 observations
+human_ <- human_[1:last, ]
+
+# add countries as rownames
+rownames(human_) <- human_$country
+
+#Check that the observations and variables match
+str(human_)
+
+#overwrite the old file... As the peer reviews are not in, I will try to
+#remember to run this line later...
+write.csv(human_,"~/Documents/GitHub/IODS-project/data/human.csv", row.names=TRUE)
+
+#For now, I'll just overwrite the dataset in the memory
+human <- human_
+
+
+
+                                                                                
+                                                                                

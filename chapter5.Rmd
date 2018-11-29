@@ -1,0 +1,304 @@
+
+#R-exercise 5
+
+##Loading and exploring the data
+
+```{r, message=FALSE}
+library(readr)
+human <- read.csv("~/Documents/GitHub/IODS-project/data/human.csv", row.names=1)
+
+```
+
+```{r, message=FALSE}
+str(human)
+summary(human)
+```
+
+*human* dataframe has `r dim(human)[1]` observations of `r dim(human)[2]` variables: 
+
++ `country` - country name
++ `edu2F` - proportion of females with at least secondary education 
++ `labF` - proportion of females in the labour force
++ `lifeExp` - life expectancy at birth
++ `expSchool` - expected years of schooling 
++ `gni` - gross national income per capita
++ `mamo.ratio` - maternal mortality ratio
++ `parlrep` - percetange of female representatives in parliament
++ `adobirthrate` - adolescent birth rate.
+   
+From which `edu2F` and `labF` are proportional combined variables.
+
+The database is a combined database of Human Development index and Gender Inequality index, which are a part of United Nations Development Programme's Human Development reports.
+   
+More information about the dataset can be found [here](http://hdr.undp.org/en/content/human-development-index-hdi).
+   
+Technical notes can be found [here](http://hdr.undp.org/sites/default/files/hdr2015_technical_notes.pdf).
+   
+This time there is no binary variable in the data. We can see that for some variables the mean and median are not the same number, so the distributions for them seem skewed. We will see them better next when we'll plot the variables.
+   
+##Plotting the data
+    
+Let's start with histograms and density plots, followed by *pairs* and correlation graphs.
+    
+```{r, message=FALSE}
+library(purrr)
+library(tidyr)
+library(ggplot2)
+
+human %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free") +
+    geom_histogram()
+
+human %>%
+  keep(is.numeric) %>%                     # Keep only numeric columns
+  gather() %>%                             # Convert to key-value pairs
+  ggplot(aes(value)) +                     # Plot the values
+    facet_wrap(~ key, scales = "free") +   # In separate panels
+    geom_density()
+```
+
+
+   
+Some of the variables like `expSchool`, `labF` and `parlrep` look like they might be normally distributed. `edu2F` might be trimodal. `adobirthrate`, `gni` and `mamo.ratio` are skewed to the right, and `lifeExp` and `expSchool` to the left.
+   
+Next, I'll create a categorical variable based on the quartiles of the GNI index, to see if better how the variables differ by their GNI score.
+   
+    
+```{r, message=FALSE, dpi=200}
+library(GGally)
+
+# create a categorical variable 'gni'
+bins <- quantile(human$gni)
+gnicat <- cut(human$gni, breaks = bins, include.lowest = TRUE, label=c("low","med_low","med_high","high"))
+
+ggpairs(dplyr::select(human, -country), mapping = aes(col = gnicat, alpha = 0.3), lower = list(combo = wrap("facethist")))
+```
+    
+       
+The order of the coloring is red, green, blue, purple from low to high scores in the GNI index.
+   
+    
+```{r, message=FALSE}
+library("tidyverse")
+library("dplyr")
+library("corrplot")
+# calculate the correlation matrix and round it
+cor_matrix<-cor(dplyr::select(human, -country)) %>% round(digits=2)
+# print the correlation matrix
+#print(cor_matrix)
+# visualize the correlation matrix
+corrplot.mixed(cor_matrix, tl.cex = 0.7, number.cex = .8)
+```
+   
+Countries with higher GNI index score have higher education shares for women, than the lower ones. They also have higher expected years of schooling and life expectancy.
+Labor participation rate for women is on the higher end in the quartile that scores lowest in GNI.
+There's surprisingly little difference between the four GNI quartiles when it comes to women's parliamental participation rate (there is a presumption that these countries have parliaments). Only the fourth quartile has something of a normal distribution in it and the others are skewed to the right.
+   
+Let's sum up the biggest correlations between the variables (arranged into a decreasing order in absolute value)
+   
+    
+```{r, message=FALSE}
+library(reshape2)
+CM <- cor_matrix                           # Make a copy of the matrix
+CM[lower.tri(CM, diag = TRUE)] <- NA       # lower tri and diag set to NA
+corr_list<-subset(melt(CM, na.rm = TRUE), abs(value) > .7)
+corr_list %>% arrange(desc(abs(value))) -> corr_list2
+print(corr_list2)
+```
+
+Life expectancy had strong negative correlation (`r corr_list2$value[1]`) with maternal mortality ratio. This one is pretty self-explanatory.
+     
+Life expectancy had a strong positive correlation with the expected years of schooling (`r corr_list2$value[2]`), and it is logical as when life expectancy is higher, parents will value schooling more as an investment.
+    
+Proportion of females with at least secondary education correlated positively (`r corr_list2$value[3]`) with expected years of schooling (of course as higher portion of population attend schooling, also the population average will rise).
+    
+Next one is positive correlation (`r corr_list2$value[4]`) between maternal mortality ratio and adolescent birth rate, which again makes sense, as higher the adolescent birth rate is (how many childbirths women give during their lives), naturally more mortality there is among these women.
+   
+As a last remark, education share for women seems to have a positive relationship with higher life expectancy and smaller maternal mortality ratio.
+   
+##2 Principal component analysis (PCA)
+    
+First we perform the PCA to non-standardised data.
+   
+```{r, message=FALSE, dpi=200}
+# perform principal component analysis (with the SVD method)
+pca_human <- prcomp(dplyr::select(human, -country))
+
+print(pca_human)
+# draw a biplot of the principal component representation and the original variables
+
+s <- summary(pca_human)
+print(s)
+
+# rounded percetanges of variance captured by each PC
+pca_pr <- round(100*s$importance[2, ], digits = 1)
+```
+   
+Lets check out the percentages of variance of principal components and make the biplot.
+   
+    
+```{r, message=FALSE, dpi=200}
+# print out the percentages of variance
+pca_pr
+
+# create object pc_lab to be used as axis labels
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+
+# draw a biplot
+biplot1<-biplot(pca_human, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+
+```
+    
+Seems like without standardising the data one principal component explains all of the variation, and the graph does not tell us much.
+   
+##3 PCA with standardised data
+   
+Let's now standardise the *human* data.
+
+```{r, message=FALSE}
+human_std <- scale(dplyr::select(human, -country))
+# summaries of the scaled variables
+summary(human_std)
+# change the object to data frame
+human_std <- as.data.frame(human_std)
+```
+   
+Then perform the PCA (principal component analysis) for the standardised data.
+   
+```{r, message=FALSE, dpi=200}
+    
+# perform principal component analysis (with the SVD method)
+pca_human <- prcomp(human_std)
+
+print(pca_human)
+# draw a biplot of the principal component representation and the original variables
+
+s <- summary(pca_human)
+print(s)
+
+# rounded percetanges of variance captured by each PC
+pca_pr <- round(100*s$importance[2, ], digits = 1)
+```
+   
+Lets check out the percentages of variance captured by the principal components and make a biplot.
+   
+    
+```{r figs, message=FALSE, dpi=200, fig.cap="*Figure A: Women's participation in society and childbearing*"}
+   
+# print out the percentages of variance
+pca_pr
+
+# create object pc_lab to be used as axis labels
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+
+# draw a biplot
+biplot2<-biplot(pca_human, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+
+
+```
+   
+The results are now different. This is because PCA is sensitive to the relative scaling of the original features, thus standardising the data is a good idea.    
+    
+   
+## 4 The personal interpretation of the two PCAs
+   
+My interpretation of PC#1 is that it describes the relation between education and birthrate/maternal mortality, i.e. when families have less children who live longer, the education will be seen as more and more important. General education is also likely to improve women's survival of childbirth.
+     
+My interpretation of PC#2 is that it describes the women's participation in the society, i.e. for example representation in the parliament or participation in the labour markets. The principal component seems to be an aggregate of our two variables `parlrep` and `labF` and there does not seem to be a variable that has the opposite effect. I think this is because the variables are shares of multiple variables, which we had in the data wrangling section before combining them into this one.
+   
+For example in top left corner we have the Scandinavian countries with high schooling and high participation ration for women, and at the bottom we can find countries where women are known to be repressed in the state politics, like Iran, Iraq and Pakistan. These countries are still relatively advanced, as we can see from maternal mortality rate. Some African countries on the right have quite high participation ratios for women, but still maternal mortality rate is quite high.
+     
+#5 Tea drinkers of the world unite
+    
+For the data *tea*, 300 tea consumers were interviewed about their consumption of tea. The questions were about how they consume tea, how they think of tea and descriptive questions (sex, age, socio-professional category and sport practise). 122 male and 178 female participated, from age 15 to 90, median age being 32 years and mean 37.
+We have categorical, qualitative and quantitative variables in the data. For the age, the data set has two different variables: a continuous and a categorical one. The data is part of FactoMineR package for R, and more information can be found [from the FactoMineR homepage](http://factominer.free.fr/index.html).
+   
+
+```{r, message=FALSE}
+library(FactoMineR)
+data(tea)
+# column names to keep in the dataset
+keep_columns <- c("Tea", "How", "how", "sugar", "where", "age_Q")
+
+# select the 'keep_columns' to create a new dataset
+tea_time <- select(tea, one_of(keep_columns))
+
+# look at the summaries and structure of the data
+summary(tea_time)
+str(tea_time)
+```
+  
+We have selected columns `Tea`, `How`, `how`, `sugar`, `where` and `age_Q` from the data. 
+
+After this selection, the dataset *tea* has `r dim(tea_time)[1]` observations of `r dim(tea_time)[2]` variables of type factor. 
+
+    
+```{r, message=FALSE}
+# visualize the dataset
+gather(tea_time) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+```
+        
+From the bar plot we can read the age distribution by categorical division. Note that the first age group in the graph is +60 (it would probably be the last one if named "60+"). We see that most of the people use tea bags and users of unpackaged tea are in minority. It's likely that tea is bought in bags from a chain store, as the proportions are similar. The tea is usually drank without supplements, with only sugar added. Around half of the drinkers do not use sugar at all. Majority of the tea quality is Earl Grey tea, which is consumed about 2.5 times over the regular black tea.  
+
+
+```{r, message=FALSE}
+# multiple correspondence analysis
+mca <- MCA(tea_time, graph = FALSE)
+
+# summary of the model
+summary(mca)
+```
+   
+From the summary we can see that for the variable `milk` the test value is smaller in absolute value than the critical value of 1.96, so we cannot say that their coordinate is significantly different from zero respect to **dim#1**.
+  
+Respect to **dim#2** the same goes for variables `Earl Grey` and `lemon`.
+
+```{r, message=FALSE, dpi=200}
+# visualize MCA
+plot(mca, invisible=c("ind"), habillage = "quali")
+
+```
+   
+The distance between variable categories gives a measure of their similarity. Here the *Dim 1* explains 13.43% of the variation and *Dim 2* explains 11.40% of the variation. Neither dimension seems to explain the majority of the variation, and the percentages are quite close each other.
+   
+After plotting the MCA factor map, we can clearly see different groups formed:
+   
+* unpackaged tea is related to tea shops,
+  
+* teabag+unpackaged is related to chain store+tea shop,
+
+* teabags are related to chain stores.
+   
+Sugar and milk is being added more often to bag tea than unpackaged tea, more often to Earl Grey tea than to black or green. Lemon is added mostly to unpackaged tea. "Other" is a curious case, indicating strongly a Dim2.
+
+   
+```{r, message=FALSE}
+dimdesc(mca)
+
+```
+   
+Using the *dimdesc* we can see that `where` you buy your tea and `how` it is packaged is strongly related to *Dim 1*. Next comes the `age_Q` and the tea type.
+    
+For *Dim 2* the list is somewhat different, with `where` (chain store or tea shop), `how` (packaged or not) and `How` (if they use lemon or milk or other with the tea). 
+   
+I found describing the *Dim 2* somewhat problematic, as the group seems to fall between the two ends of buying bagged tea from chain stores and buying unpackaged tea from tea shops. With mostly `other` being the most important factor. What this "other" that people add in their tea is, I'm not sure. Maybe soy milk or similar, that does not fit under category "milk"? I could not find description for the variable from the home page, so I'm not sure if only one who knows what it means is the one who answered the questions.
+
+My interpretation is that people belonging to *Dim 1* are those who prefer drinking unpackaged tea, who buy it from a tea shop, drink it black without sugar and sometimes add a slice of lemon or drink green tea. For those estimates in the list that are negative, goes that if the individual has these characteristics, it is less likely for him/her belonging into this group.
+   
+We also make the observation that people belonging into this groups are likely to be older, which we also observe in the MCA plot earlier.
+   
+Let's try out one extra plotting function of FactoMineR.
+   
+```{r, message=FALSE, dpi=200}
+plotellipses(mca, keepvar=(1:5))
+
+```
+
+By drawing the confidence ellipses we can see that the confidence ellipses are quite small and don't overlap, so the sub-populations here are pretty distinct.
+
+
+
+
