@@ -1,7 +1,7 @@
 
 #R-exercise 5
 
-##Loading and exploring the data
+##1 Loading and exploring the data
 
 ```{r, message=FALSE}
 library(readr)
@@ -36,8 +36,6 @@ Technical notes can be found [here](http://hdr.undp.org/sites/default/files/hdr2
    
 This time there is no binary variable in the data. We can see that for some variables the mean and median are not the same number, so the distributions for them seem skewed. We will see them better next when we'll plot the variables.
    
-##Plotting the data
-    
 Let's start with histograms and density plots, followed by *pairs* and correlation graphs.
     
 ```{r, message=FALSE}
@@ -211,7 +209,7 @@ My interpretation of PC#2 is that it describes the women's participation in the 
    
 For example in top left corner we have the Scandinavian countries with high schooling and high participation ration for women, and at the bottom we can find countries where women are known to be repressed in the state politics, like Iran, Iraq and Pakistan. These countries are still relatively advanced, as we can see from maternal mortality rate. Some African countries on the right have quite high participation ratios for women, but still maternal mortality rate is quite high.
      
-#5 Tea drinkers of the world unite
+##5 Tea drinkers of the world unite
     
 For the data *tea*, 300 tea consumers were interviewed about their consumption of tea. The questions were about how they consume tea, how they think of tea and descriptive questions (sex, age, socio-professional category and sport practise). 122 male and 178 female participated, from age 15 to 90, median age being 32 years and mean 37.
 We have categorical, qualitative and quantitative variables in the data. For the age, the data set has two different variables: a continuous and a categorical one. The data is part of FactoMineR package for R, and more information can be found [from the FactoMineR homepage](http://factominer.free.fr/index.html).
