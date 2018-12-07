@@ -1,0 +1,368 @@
+#R-exercise 6
+    
+## Analyses of Chapter 8 of MABS using the RATS data. 
+   
+## 01 Loading the data
+   
+Lets load the data and confirm that everything is OK.
+   
+```{r, message=FALSE}
+# Access the package ggplot2
+library(ggplot2)
+# Load RATSL
+library(readr)
+RATSL <- read.csv("data/RATSL.csv")
+#Refactoring, etc., as saving the file seems to have dropped the formatting
+RATSL$ID <- factor(RATSL$ID)
+RATSL$Group <- factor(RATSL$Group)
+RATSL$WD <- as.character(RATSL$WD)
+str(RATSL)
+head(RATSL)
+```
+   
+From the Datacamp exercise we can find the description for the data
+
+>...nutrition study conducted in three groups of rats. The groups were put on different diets, and each animal’s body weight (grams) was recorded repeatedly (approximately) weekly, except in week seven when two recordings were taken) over a 9-week period. The question of most interest is whether the growth profiles of the three groups differ.
+    
+## 02 Plotting the RATSL values for all rats, differentiating between the diet groups
+   
+```{r, message=FALSE, fig.cap="Figure 1: *Individual response profiles by diet group for the RATS data*"}
+# Draw the plot
+ggplot(RATSL, aes(x = Time, y = Weight, linetype = ID)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(limits = c(min(RATSL$Weight), max(RATSL$Weight)))
+```
+   
+From the plot we can see that all the rats gained weight during the study. In *group 1* we have one rat that had lower weight to begin with. Likewise, there was a similar case in *group 3*.
+   
+In *group 2* we have one clear outlier, a rat that had much higher weight in the beginning compared to other rats in that group. 
+   
+The slope of the line seems to be smallest in *group 1*, which suggests the rats in that group did not gain much weight during the study.
+   
+Tracking is visible on average in all groups, even if some deviations can be seen, most clearly with *group 2* (tracking = rats who have higher weight values at the beginning tend to have higher values throughout the study).
+   
+There is not really change in the variation between the rats during the study.
+   
+## 03 Standardising and plotting the data
+   
+```{r, message=FALSE}
+library(tidyr)
+library(dplyr)
+# Standardise the variable bprs
+RATSL <- RATSL %>%
+  group_by(Time) %>%
+  mutate(stdWeight = (Weight - mean(Weight))/sd(Weight) ) %>%
+  ungroup()
+
+# Glimpse the data
+glimpse(RATSL)
+```
+
+```{r, message=FALSE, fig.cap="Figure 1: *Individual response profiles by diet group for the standardised RATS weight data*"}
+# Draw the plot
+ggplot(RATSL, aes(x = Time, y = stdWeight, linetype = ID)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(name = "standardised RATS")
+```
+   
+As with the MABS BPRS data, tracking can be seen more clearly from the standardised data.
+    
+## 04 Summary graphs
+     
+```{r, message=FALSE}   
+# Number of weeks, baseline (week 0) included
+n <- RATSL$Time %>% unique() %>% length()
+
+# Summary data with mean and standard error of bprs by treatment 
+# and week 
+RATSS <- RATSL %>%
+  group_by(Group, Time) %>%
+  summarise( mean = mean(Weight), se= sd(Weight) ) %>%
+  ungroup()
+
+# Glimpse the data
+glimpse(RATSS)
+
+# Plot the mean profiles
+ggplot(RATSS, aes(x = Time, y = mean, linetype = Group, shape = Group)) +
+  geom_line() +
+  scale_linetype_manual(values = c(1,2,3)) +
+  geom_point(size=3) +
+  scale_shape_manual(values = c(1,2,3)) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se, linetype="1"), width=0.3) +
+  theme(legend.position = c(0.8,0.35)) +
+  scale_y_continuous(name = "mean(RATS) +/- se(RATS)")
+```
+   
+From the mean profiles plot we can confirm that the average weight of the rats rose during the study. There were some deviations in the growth: between the first and second observation for *group 3*, and between observations six and seven for the *group 1* and *group 2* the rats lost weight. The average weight for the rats in *group 1* was much lower than the rats in the other two.
+    
+Lets draw the alternative for the mean response graph, the side-by-side box plots of the observations at each time point.
+   
+```{r, message=FALSE, fig.cap="Figure 1: *Boxplot of the RATS data*"} 
+#Little editing as using "week" seems to plot the wrong way
+RATSLP<-RATSL
+RATSLP$WD[RATSLP$WD == "WD1"] <- "WD01"
+RATSLP$WD[RATSLP$WD == "WD8"] <- "WD08"
+
+# Draw a boxplot of the mean versus treatment
+ggplot(RATSLP, aes(x = RATSLP$WD, y = Weight, col = Group)) +
+  geom_boxplot() +
+  xlab("Week")
+
+```
+   
+We can try spotting the outliers by drawing box plots for each of the study groups. Lets create a summary data by `Group` and `ID` with mean as the summary variable (ignoring baseline week 1).
+   
+```{r, message=FALSE} 
+RATSL8S <- RATSL %>%
+  filter(Time > 1) %>%
+  group_by(Group, ID) %>%
+  summarise( mean=mean(Weight) ) %>%
+  ungroup()
+
+# Glimpse the data
+glimpse(RATSL8S)
+
+# Draw a boxplot of the mean versus treatment
+ggplot(RATSL8S, aes(x = Group, y = mean)) +
+  geom_boxplot() +
+  stat_summary(fun.y = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "mean(RATS), 11 observations")
+
+```
+   
+From the box plot we can see that there is an outlier in all groups, total three outliers. Let's remove the outliers and re-plot.
+
+```{r, message=FALSE} 
+# Create a new data by filtering the outlier and adjust the ggplot code the draw the plot again with the new data
+RATSL8S1 <- filter(RATSL8S, (Group == 1 & mean > 250) | (Group == 2 & mean < 590) | (Group == 3 & mean > 500))
+
+ggplot(RATSL8S1, aes(x = Group, y = mean)) +
+  geom_boxplot() +
+  stat_summary(fun.y = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "mean(RATS), 11 observations")
+
+```
+   
+The box plots changed quite dramatically, especially for *group 2*. There is lot less variance in the averages of the study groups. The groups also appear to have their distinct average level of weight. 
+  
+Now, my opinion is that there is no sense in testing the groups with t-test similar way as in MABS for `BPRS` data (and F-test, as there are now three groups). None of the plots indicated a lack of difference between the diet groups - the difference between them is clear already from the plots!
+   
+I could not find more information about how the rats are divided to groups by diet, other that that "they're on different diets". There seems to be no control group, or I have no idea what the different groups are. More info about the data can be found from [here](https://stat.ethz.ch/R-manual/R-devel/library/nlme/html/BodyWeight.html).
+   
+## Implement the analyses of Chapter 9 of MABS using the BPRS data. 
+    
+## 05 Loading the data
+    
+Lets load the data and confirm that everything is OK.
+   
+```{r, message=FALSE}
+# Access the package ggplot2
+library(ggplot2)
+# Load BPRSL
+library(readr)
+BPRSL <- read.csv("data/BPRSL.csv")
+BPRS <- read.csv("data/BPRS.csv")
+#Refactoring, etc., as saving the file seems to have dropped the formatting
+BPRSL$subject <- factor(BPRSL$subject)
+BPRSL$treatment <- factor(BPRSL$treatment)
+BPRSL$weeks <- as.character(BPRSL$weeks)
+BPRS$subject <- factor(BPRS$subject)
+BPRS$treatment <- factor(BPRS$treatment)
+str(BPRSL)
+head(BPRSL)
+
+```
+   
+From the Datacamp exercise we know the following about the data:
+
+>in which 40 male subjects were randomly assigned to one of two treatment groups and each subject was rated on the brief psychiatric rating scale (BPRS) measured before treatment began (week 0) and then at weekly intervals for eight weeks. The BPRS assesses the level of 18 symptom constructs such as hostility, suspiciousness, hallucinations and grandiosity; each of these is rated from one (not present) to seven (extremely severe). The scale is used to evaluate patients suspected of having schizophrenia.
+   
+## 06 Data scatterplot
+   
+Let's XY plot the data.
+
+
+```{r, message=FALSE, dpi=200, fig.cap="Figure 1: *Plot of bprs against time for subject data, ignoring the repeated-measures structure of the data but identifying the group to which each observation belongs.*"    }
+
+# initialize plot with data and aesthetic mapping
+p1 <- ggplot(BPRSL, aes(x = week, y = bprs, col=treatment))
+# define the visualization type (points)
+p2 <- p1 + geom_point(size = 3, alpha = .3)
+# add a regression line
+p3 <- p2 + geom_smooth(method = "lm")
+#draw the plot
+p4 <- p3 + theme_minimal()
+p4
+```
+  
+From the fitted regression line, we can see that the `bprs` goes down with the data. This has the interpretation, that during the study the patients' condition rated less severe in the end.
+ 
+```{r, message=FALSE, fig.cap="Figure 1: *Plot of individual `bprs` profile by treatment group*"}
+
+ggplot(BPRSL, aes(x = week, y = bprs, linetype = subject)) +
+  geom_line(aes(col=treatment)) +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+#  facet_grid(. ~ treatment, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(limits = c(min(BPRSL$bprs), max(BPRSL$bprs)))
+
+``` 
+  
+There does not seem to be much difference between the two treatment groups. Let's plot the pairs 
+   
+```{r, message=FALSE, dpi=200, fig.cap="*Scatterplot matrix of repeated measures in BPRS data.*"}
+pairs(BPRS[3:11])
+```  
+   
+For drawing the pairs plot we used the wide form of the data. We can observe linear pattern (dependence) in some of the pairs in the lower right corner.
+
+
+   
+## 07 Creating linear model
+     
+Let's create a linear model despite the repeated-measures structure of the data, using `bprs` as response and `week` and `treatment` as explanatory variables.
+    
+```{r, message=FALSE}
+# create a regression model RATS_reg model
+# bprs ~ week + d1
+BPRS_reg <- lm(bprs ~ week + treatment, data = BPRSL)
+
+# print out a summary of the model
+summary(BPRS_reg)
+```
+   
+From the regression we can see that `treatment2` is not statistically significant on any level conditional to time (`week`). This means we cannot reject the null hypothesis that its coefficient is zero and it has no effect on `bprs`. The coefficient for `week` is negative and statistically significant at 99.9% confidence level. We can try testing if the `week` and `treatment` dummy variable are jointly zero.
+   
+```{r, message=FALSE}
+#create a dummy variable, which gets value '1' when subject belongs into
+#treatment group 2
+d1 <- as.numeric(BPRSL$treatment)-1
+#d1 <- factor(d1)
+BPRS_reg <- lm(bprs ~ week + d1, data = BPRSL)
+library(car)
+ss_results <- linearHypothesis(BPRS_reg,  c("week = 0", "d1 = 0"))
+print(ss_results)
+```
+   
+We find evidence for these variables not being jointly zero.
+    
+However, as is stated in MABS, the model assumes independence of the repeated measures, and this assumption is highly unlikely.
+   
+## 08 Fitting random intercept model
+   
+   
+Now the regression model is $$y_{ij} \sim (\beta_0+u_i)+\beta_1t_j +\beta_2D_i+\epsilon_{ij}$$ 
+  
+   
+```{r, message=FALSE}   
+# access library lme4
+library(lme4)
+
+# Create a random intercept model
+BPRS_ref <- lmer(bprs ~ week + treatment + (1 | subject), data = BPRSL, REML = FALSE)
+VC<-VarCorr(BPRS_ref)
+
+# Print the summary of the model
+summary(BPRS_ref)
+```
+
+Variance for the intercept term is `r round(VC$subject[1], digits=1)` which seems quite large, even if it's maybe a little smaller than the variation found in the MABS RATS data, after taking the scale of the values for response variable into consideration.
+   
+If we take the standard deviation `r round(sqrt(VC$subject[1]), digits=1)`, which has the same scale of measure as bprs, the deviation of the intercept does not seem that big. Unfortunately I'm not familiar enough with the analysis for longitudinal data to interpret if the variation is big enough to cause concern.
+   
+The estimates for the variables in the linear mixed model are exactly the same with four digits precision as in the earlier regression, where independence was presumed.
+    
+The standard error for `week` is now somewhat smaller (0.2084) than in the earlier regression (0.2524) (MABS: *assuming independence will lead to the standard error of a within-subject covariate such as time being larger than it should be because of ignoring the likely within-subject dependences, which will reduce the error variance in the model*).
+    
+The standard error for `treatment` is now (1.0761). Earlier standard error (1.3035) was bigger. This is the opposite situation than there is in MABS with the RATS data.
+   
+## 09 Random intercept and random slope model
+   
+Now the model is $$y_{ij} \sim (\beta_0+u_i)+(\beta_1+v_i)t_j +\beta_2D_i+\epsilon_{ij}$$
+   
+```{r, message=FALSE}  
+# create a random intercept and random slope model
+BPRS_ref1 <- lmer(bprs ~ week + treatment + (week | subject), data = BPRSL, REML = FALSE)
+
+# print a summary of the model
+summary(BPRS_ref1)
+
+# perform an ANOVA test on the two models
+anova(BPRS_ref1, BPRS_ref)
+
+```
+    
+Variance for the intercept seem to have grown, maybe because we added a variable into regression. The estimates for fixed effects are again the same, std. error for week is little bigger and for treatment little smaller.
+
+The likelihood ratio test for the random intercept model versus the random intercept and slope model gives a chi-squared statistic of 7.27 with 2 degrees of freedom (DF). P-value 0.02636 is significant at 95% level, so we may reject the null. The sample size is on the small side though, so I'd like to use higher confidence level. If we reject the null hypothesis, the random intercept and slope model gives us a better fit. According to MABS the p-value we have obtained here is not without problems. Solution is to divide it by two (more information in MABS part 6 page 27). So the final p-value is 0.01318 and we end up rejecting the null.
+  
+   
+## 10 Random Intercept and Random Slope Model with interaction
+     
+The model with added group x time interaction term is 
+$$y_{ij} \sim (\beta_0+u_i)+(\beta_1+v_i)t_j +\beta_2D_i+\beta_4(D_i\times t_j)+\epsilon_{ij}$$ 
+   
+   
+   
+```{r, message=FALSE}  
+
+# create a random intercept and random slope model
+BPRS_ref2 <- lmer(bprs ~ week * treatment + (week | subject), data = BPRSL, REML = FALSE)
+
+# print a summary of the model
+summary(BPRS_ref2)
+
+# perform an ANOVA test on the two models
+anova(BPRS_ref2, BPRS_ref1)
+```
+ 
+The coefficients for fixed effects have changed somewhat, but are still quite close to the first regression. We can see that *treatment group 2* has a negative coefficient of -0.424 (we can think group 1 as zero), which means that if subject belongs into group 2, `bprs` is lower than otherwise.
+
+Let's add the fitted values into BPRSL as a column. 
+   
+```{r, message=FALSE, fig.cap="*Fitted growth rate profiles from the interaction model and observed growth rate profiles*"} 
+# Create a vector of the fitted values
+Fitted <- fitted(BPRS_ref2)
+
+# Create a new column fitted to RATSL
+BPRSL <- BPRSL %>%
+  mutate(Fitted)
+
+#Fitted plot
+plot2 <- ggplot(BPRSL, aes(x = week, y = Fitted, linetype = subject)) +
+  geom_line(aes(col=treatment)) +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  theme(legend.position = "none") +
+  scale_y_continuous(limits = c(min(BPRSL$Fitted), max(BPRSL$bprs))) +
+  ggtitle("Fitted")
+
+#Observed plot
+plot1 <- ggplot(BPRSL, aes(x = week, y = bprs, linetype = subject)) +
+  geom_line(aes(col=treatment)) +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  theme(legend.position = "none") +
+  scale_y_continuous(limits = c(min(BPRSL$Fitted), max(BPRSL$bprs))) +
+  ggtitle("Observed")
+
+
+library(ggpubr)
+
+#  facet_wrap(~ high_use)
+ggarrange(plot1, plot2, ncol = 2, nrow = 1)
+
+```
+    
+The interaction model does not seem to fit the observed data very well, as the fitted plots look much different.
+   
+  
+  
+
+
+
